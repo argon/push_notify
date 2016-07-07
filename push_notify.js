@@ -1,35 +1,37 @@
-var net = require('net');
-var fs  = require('fs');
+"use strict";
 
-var redis = require('redis');
-var apn = require('apn');
+const net = require('net');
+const fs  = require('fs');
 
-var server = net.createServer(function(c) { //'connection' listener
-  c.on('end', function() { });
-  c.on('data', function(data) {
-  var msg_data = {};
-    msg_data.msg = data.readUInt32LE(0);
-    msg_data.pid = data.readUInt32LE(4);
+const redis = require('redis');
+const apn = require('apn');
 
-    msg_data.d1 = fromCString(data.slice(8, 135), 'utf8', 0);
-    msg_data.d2 = fromCString(data.slice(136, 647), 'utf8', 0);
-    msg_data.d3 = fromCString(data.slice(648, 1159), 'utf8', 0);
-    msg_data.d4 = fromCString(data.slice(1160, 1671), 'utf8', 0);
+const server = net.createServer( connection => {
+  c.on('data', data => {
+    const msg_data = {
+      msg: data.readUInt32LE(0),
+      pid: data.readUInt32LE(4),
 
-  if(msg_data.msg == 1) {
-    console.error("Create node, msg 1 is deprecated");
-  }
-  else if(msg_data.msg == 2) {
-    console.log("Registering client", msg_data.d1, msg_data.d2);
-    register_client(msg_data);
-  }
-  else if(msg_data.msg == 3) {
-    console.log("Publishing notification", msg_data.d1);
-    publish(msg_data);
-  }
-  else {
-    console.error("Error: unknown message type: ", msg_data.msg);
-  }
+      d1: fromCString(data.slice(8,     135), 'utf8', 0),
+      d2: fromCString(data.slice(136,   647), 'utf8', 0),
+      d3: fromCString(data.slice(648,  1159), 'utf8', 0),
+      d4: fromCString(data.slice(1160, 1671), 'utf8', 0),
+    };
+
+    if(msg_data.msg == 1) {
+      console.error("Create node, msg 1 is deprecated");
+    }
+    else if(msg_data.msg == 2) {
+      console.log("Registering client", msg_data.d1, msg_data.d2);
+      register_client(msg_data);
+    }
+    else if(msg_data.msg == 3) {
+      console.log("Publishing notification", msg_data.d1);
+      publish(msg_data);
+    }
+    else {
+      console.error("Error: unknown message type: ", msg_data.msg);
+    }
   });
 });
 
@@ -95,7 +97,7 @@ function fromCString(buffer, encoding, offset) {
 
 server.on('error', function (e) {
   if (e.code == 'EADDRINUSE') {
-    var clientSocket = new net.Socket();
+    let clientSocket = new net.Socket();
     clientSocket.on('error', function(e) { // handle error trying to talk to server
       if (e.code == 'ECONNREFUSED') {  // No other server listening
         fs.unlink('/var/dovecot/push_notify');
