@@ -6,28 +6,41 @@ const fs  = require('fs');
 const redis = require('redis');
 const apn = require('apn');
 
-const server = net.createServer( connection => {
-  c.on('data', data => {
-    const message = parseMessage(data)
-    switch (message.type) {
-      case 1:
-        console.error("Create node, type 1 is deprecated");
-        break;
-      case 2:
-        console.log("Registering client", message.d1, message.d2);
-        register_client(message);
-        break;
-      case 3:
-        console.log("Publishing notification", message.d1);
-        publish(message);
-        break;
-      default:
-        console.error("Error: unknown message type: ", message.type);
-    }
-  });
-});
+function messageReceived(message) {
+  switch (message.type) {
+    case 2: // Account registration
+      let username    = message.d1;
+      let accountId   = message.d2;
+      let deviceToken = message.d3;
+      let subtopic    = message.d4;
 
-function parseMessage(data) {
+      console.log("Registering client: ", username, accountId);
+      registerClient(username, accountId, deviceToken, subtopic);
+      break;
+
+    case 3: // Mailbox updated
+      let username    = message.d1;
+      let mailbox     = message.d2;
+
+      console.log("Publishing notification", username, mailbox);
+      notify(username, mailbox);
+      break;
+
+    case 4: // Mailbox subscription
+      let username    = message.d1;
+      let accountId   = message.d2;
+      let deviceToken = message.d3;
+      let mailboxName = message.d4;
+
+      subscribeToMailbox(username, accountId, deviceToken, mailboxName);
+      break;
+
+    case 1: // Original protocol, never supported
+    default:
+      console.error("Error: unknown message type: ", message.type);
+  }
+}
+function parseMsgData(data) {
   return {
     type: data.readUInt32LE(0),
     pid: data.readUInt32LE(4),
@@ -39,23 +52,11 @@ function parseMessage(data) {
   };
 }
 
-var redis_client = redis.createClient();
-var connection = new apn.Connection({
-  errorCallback: function(err, note) { console.log(err, note); },
-  connectionTimeout: 300000
-});
-var feedback = new apn.Feedback({});
-feedback.on('feedback', function(data) {
-  for(var key in data) {
-    unregister_device(data[key].device, data[key].time);
-  }
-});
-
-function publish(message) {
-  redis_client.smembers("pn:email:" + message.d1, function (err, replies) {
+function notify(username) {
+  redis_client.smembers("pn:email:" + username, function (err, replies) {
     if(replies === null) return;
     replies.forEach(function(value, i) {
-      redis_client.get("pn:accountid:" + message.d1 + ":" + value, function(err, accountId) {
+      redis_client.get("pn:accountid:" + username, function(err, accountId) {
         if(accountId === null) return;
         // Send push notification
         var device = new apn.Device(value);
@@ -68,7 +69,7 @@ function publish(message) {
   });
 }
 
-function register_client(message) {
+function register_client(username, accountId, deviceToken, subtopic) {
   redis_client.sadd("pn:email:" + message.d1, message.d3);
   redis_client.set("pn:accountid:" + message.d1 + ":" + message.d3, message.d2);
   redis_client.sadd("pn:device:" + message.d3, message.d1);
@@ -99,6 +100,22 @@ function fromCString(buffer, encoding, offset) {
   return null;
 }
 
+const redis_client = redis.createClient();
+const connection = new apn.Connection({
+  errorCallback: function(err, note) { console.log(err, note); },
+  connectionTimeout: 300000
+});
+const feedback = new apn.Feedback({});
+feedback.on('feedback', function(data) {
+  for(var key in data) {
+    unregister_device(data[key].device, data[key].time);
+  }
+});
+
+const server = net.createServer( connection => {
+  c.on('data', data => messageReceived(parseMsgData(data)));
+});
+
 server.on('error', function (e) {
   if (e.code == 'EADDRINUSE') {
     let clientSocket = new net.Socket();
@@ -118,5 +135,5 @@ server.on('error', function (e) {
 });
 
 server.listen('/var/dovecot/push_notify', function() {
-  fs.chmod('/var/dovecot/push_notify', 0777);
+  fs.chmod('/var/dovecot/push_notify', 777);
 });
