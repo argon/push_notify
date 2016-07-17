@@ -1,18 +1,5 @@
 "use strict";
 
-function encodeMsgData(data) {
-  let buffer = Buffer.alloc(1671, 0);
-
-  buffer.writeUInt32LE(data.type, 0)
-  buffer.writeUInt32LE(data.pid, 4);
-  buffer.write(data.d1, 8, 128);
-  buffer.write(data.d2, 136, 512);
-  buffer.write(data.d3, 648, 512);
-  buffer.write(data.d4, 1160, 512);
-
-  return buffer;
-}
-
 const createSocket = require("../lib/socket");
 
 const fs = require("fs");
