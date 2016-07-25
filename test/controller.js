@@ -18,29 +18,16 @@ describe("Controller", function() {
   });
 
   describe("register", function() {
-    beforeEach(function () {
+    it("registers the device token:accountid pair in redis", function() {
       controller.register("test@example.com", "1234abcd", "1234567890abcdef", "io.github.argon.push");
-    });
-
-    it("registers the device token in redis", function() {
-      expect(fakes.redis.sadd).to.be.calledWith("test_pn_prefix:test@example.com:device", "1234567890abcdef");
-    });
-
-    it("registers the account id in redis", function() {
-      expect(fakes.redis.set).to.be.calledWith("test_pn_prefix:test@example.com:1234567890abcdef:accountid", "1234abcd");
-    });
-
-    it("registers the username to the device token in redis", function() {
-      expect(fakes.redis.sadd).to.be.calledWith("test_pn_prefix:1234567890abcdef:user", "test@example.com");
+      expect(fakes.redis.sadd).to.be.calledWith("test_pn_prefix:test@example.com:device", "1234567890abcdef:1234abcd");
     });
   });
 
   describe("notify", function() {
     it("pushes to each registered device token", function () {
       const notify = controller.notify("test@example.com", "INBOX");
-      fakes.redis.get.withArgs("test_pn_prefix:test@example.com:123456abcdef:accountid").yields(null, "account-id-1234");
-      fakes.redis.get.withArgs("test_pn_prefix:test@example.com:4567890fedcba:accountid").yields(null, "account-id-4567");
-      fakes.redis.smembers.yield(null, ["123456abcdef", "4567890fedcba"]);
+      fakes.redis.smembers.yield(null, ["123456abcdef:account-id-1234", "4567890fedcba:account-id-4567"]);
 
       const expectedNotification = function (accountId) {
         return sinon.match(function (value) {
@@ -52,6 +39,10 @@ describe("Controller", function() {
         expect(fakes.apn.write).to.have.been.calledWith(expectedNotification("account-id-1234"), "123456abcdef");
         expect(fakes.apn.write).to.have.been.calledWith(expectedNotification("account-id-4567"), "4567890fedcba");
       });
+    });
+
+    it("cleans up failed device tokens", function () {
+
     });
   });
 });
