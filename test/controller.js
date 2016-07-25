@@ -1,7 +1,7 @@
 "use strict";
 
-const Controller = require("../lib/controller");
 const apn = require("apn");
+const Controller = require("../lib/controller")({Notification: apn.Notification});
 
 describe("Controller", function() {
   let fakes;
@@ -11,10 +11,8 @@ describe("Controller", function() {
     fakes = {
       apn:   new mock.APNConnection(),
       redis: new mock.RedisClient(),
-      notification: apn.Notification,
+      prefix: "test_pn_prefix:",
     }
-
-    fakes.redis.keyPrefix = "test_pn_prefix:";
 
     controller = new Controller(fakes);
   });
@@ -40,11 +38,19 @@ describe("Controller", function() {
   describe("notify", function() {
     it("pushes to each registered device token", function () {
       const notify = controller.notify("test@example.com", "INBOX");
+      fakes.redis.get.withArgs("test_pn_prefix:test@example.com:123456abcdef:accountid").yields(null, "account-id-1234");
+      fakes.redis.get.withArgs("test_pn_prefix:test@example.com:4567890fedcba:accountid").yields(null, "account-id-4567");
       fakes.redis.smembers.yield(null, ["123456abcdef", "4567890fedcba"]);
-      
-      return notify.then( ({sent, failed}) => {
-        expect(fakes.apn.write).to.have.been.calledWith(sinon.match.any, "123456abcdef");
-        expect(fakes.apn.write).to.have.been.calledWith(sinon.match.any, "4567890fedcba");
+
+      const expectedNotification = function (accountId) {
+        return sinon.match(function (value) {
+          return value.body == JSON.stringify({"aps": { "account-id": accountId}});
+        }, `notification containing ${accountId}`);
+      };
+
+      return notify.then( () => {
+        expect(fakes.apn.write).to.have.been.calledWith(expectedNotification("account-id-1234"), "123456abcdef");
+        expect(fakes.apn.write).to.have.been.calledWith(expectedNotification("account-id-4567"), "4567890fedcba");
       });
     });
   });
