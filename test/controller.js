@@ -42,7 +42,15 @@ describe("Controller", function() {
     });
 
     it("cleans up failed device tokens", function () {
+      fakes.apn.write.withArgs(sinon.match.any, "123456abcdef").returns( { status: 410, device: "123456abcdef", response: { reason: "Unregistered", timestamp: 0 } });
+      fakes.redis.srem.yields(null, 1);
 
+      const notify = controller.notify("test@example.com", "INBOX");
+      fakes.redis.smembers.yield(null, ["123456abcdef:account-id-1234", "4567890fedcba:account-id-4567"]);
+
+      return notify.then( () => {
+        expect(fakes.redis.srem).to.be.calledWith("test_pn_prefix:test@example.com:device", "123456abcdef:account-id-1234");
+      });
     });
   });
 });

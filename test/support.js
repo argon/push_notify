@@ -51,15 +51,17 @@ function Controller() {
 
 function RedisClient() {
   this.sadd      = sinon.stub();
+  this.srem      = sinon.stub();
+  this.smembers  = sinon.stub();
   this.set       = sinon.stub();
   this.get       = sinon.stub();
-  this.smembers  = sinon.stub();
 }
 
 RedisClient.prototype.sadd     = function () {};
+RedisClient.prototype.srem     = function () {};
+RedisClient.prototype.smembers = function () {};
 RedisClient.prototype.set      = function () {};
 RedisClient.prototype.get      = function () {};
-RedisClient.prototype.smembers = function () {};
 
 Promise.promisifyAll(RedisClient.prototype);
 
