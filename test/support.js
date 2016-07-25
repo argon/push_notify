@@ -2,18 +2,19 @@
 
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
+const sinon = require("sinon");
 const sinonChai = require("sinon-chai");
+const Promise = require("bluebird");
 
 chai.use(chaiAsPromised);
 chai.use(sinonChai);
 
 global.expect = chai.expect;
+global.sinon = sinon;
 
-const sinon = require("sinon");
-const Promise = require("bluebird");
 function APNConnection(sender) {
-  this.sender = sinon.stub();
-  this.sender.returns({status: "200"});
+  this.write = sinon.stub();
+  this.write.returns({});
 }
 
 APNConnection.prototype.pushNotification = function pushNotification(notification, recipients) {

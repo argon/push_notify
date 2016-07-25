@@ -1,6 +1,7 @@
 "use strict";
 
 const Controller = require("../lib/controller");
+const apn = require("apn");
 
 describe("Controller", function() {
   let fakes;
@@ -10,6 +11,7 @@ describe("Controller", function() {
     fakes = {
       apn:   new mock.APNConnection(),
       redis: new mock.RedisClient(),
+      notification: apn.Notification,
     }
 
     fakes.redis.keyPrefix = "test_pn_prefix:";
@@ -32,6 +34,18 @@ describe("Controller", function() {
 
     it("registers the username to the device token in redis", function() {
       expect(fakes.redis.sadd).to.be.calledWith("test_pn_prefix:1234567890abcdef:user", "test@example.com");
+    });
+  });
+
+  describe("notify", function() {
+    it("pushes to each registered device token", function () {
+      const notify = controller.notify("test@example.com", "INBOX");
+      fakes.redis.smembers.yield(null, ["123456abcdef", "4567890fedcba"]);
+      
+      return notify.then( ({sent, failed}) => {
+        expect(fakes.apn.write).to.have.been.calledWith(sinon.match.any, "123456abcdef");
+        expect(fakes.apn.write).to.have.been.calledWith(sinon.match.any, "4567890fedcba");
+      });
     });
   });
 });
