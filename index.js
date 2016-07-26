@@ -2,6 +2,9 @@
 
 const apn = require("apn");
 const redis = require("redis");
+const Promise = require("bluebird");
+
+Promise.promisifyAll(redis.RedisClient.prototype);
 
 const redisURL    = process.env["REDIS_URL"];
 const redisPrefix = process.env["REDIS_PREFIX"];
