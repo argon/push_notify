@@ -9,7 +9,7 @@ Promise.promisifyAll(redis.RedisClient.prototype);
 const redisURL    = process.env["REDIS_URL"];
 const redisPrefix = process.env["REDIS_PREFIX"];
 const redisClient = redis.createClient({url: redisURL});
-const apnConnection = new apn.Connection({});
+const apnConnection = new apn.Connection({ production: true });
 
 const Controller = require("./lib/controller")({Notification: apn.Notification});
 const Server = require("./lib/server");
