@@ -17,7 +17,7 @@ const Socket = require("./lib/socket");
 
 const controller = new Controller({ redis: redisClient, apn: apnConnection, prefix: redisPrefix });
 const server     = new Server({ controller });
-const socket     = new Socket("/tmp/dovecot.sock")
+const socket     = new Socket("/var/dovecot/push_notify")
   .then( socket => {
     socket.on("data", server.receive.bind(server));
   });
