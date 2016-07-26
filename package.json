@@ -1,8 +1,7 @@
 {
   "name": "push_notify",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "main": "index.js",
-  "private": true,
   "dependencies": {
     "apn": "2.0.0-alpha1",
     "bluebird": "^3.4.1",
