@@ -13,7 +13,7 @@ const Socket = require("./lib/socket");
 Socket("/var/dovecot/push_notify")
   .then( socket => {
     const redisURL    = process.env["REDIS_URL"];
-    const redisPrefix = process.env["REDIS_PREFIX"];
+    const redisPrefix = process.env["REDIS_PREFIX"] || "pn:";
     const redisClient = redis.createClient({url: redisURL});
     const apnConnection = new apn.Connection({ production: true });
 
