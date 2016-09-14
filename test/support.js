@@ -12,36 +12,6 @@ chai.use(sinonChai);
 global.expect = chai.expect;
 global.sinon = sinon;
 
-function APNConnection(sender) {
-  this.write = sinon.stub();
-  this.write.returns({});
-}
-
-APNConnection.prototype.pushNotification = function pushNotification(notification, recipients) {
-  const builtNotification = {
-    headers: notification.headers(),
-    body:    notification.compile(),
-  };
-
-  if (!Array.isArray(recipients)) {
-    recipients = [recipients];
-  }
-
-  return Promise.all( recipients.map(this.write.bind(this, builtNotification)) )
-    .then( responses => {
-    let sent = [];
-    let failed = [];
-
-    responses.forEach( response => {
-      if (response.status) {
-        failed.push(response);
-      } else {
-        sent.push(response);
-      }
-    });
-    return {sent, failed};
-  });
-}
 
 function Controller() {
   this.register  = sinon.stub();
@@ -66,7 +36,6 @@ RedisClient.prototype.get      = function () {};
 Promise.promisifyAll(RedisClient.prototype);
 
 global.mock = {
-  APNConnection,
   Controller,
   RedisClient,
 }
