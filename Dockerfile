@@ -1,7 +1,7 @@
 FROM node:6
 
 MAINTAINER Andrew Naylor <argon@mkbot.net>
-LABEL Description="push_notify_server"
+LABEL Description="push_notify"
 
 ADD . /app
 WORKDIR /app
