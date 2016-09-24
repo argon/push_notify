@@ -15,9 +15,13 @@ Socket("/var/dovecot/push_notify")
     const redisURL    = process.env["REDIS_URL"];
     const redisPrefix = process.env["REDIS_PREFIX"] || "pn:";
     const redisClient = redis.createClient({url: redisURL});
-    const apnConnection = new apn.Connection({ production: true });
+    const apnProvider = new apn.Provider({
+      cert: process.env["CERT"] || "cert.pem",
+      key: process.env["KEY"] || key.pem,
+      production: true
+    });
 
-    const controller = new Controller({ redis: redisClient, apn: apnConnection, prefix: redisPrefix });
+    const controller = new Controller({ redis: redisClient, apn: apnProvider, prefix: redisPrefix });
     const server     = new Server({ controller });
 
     socket.on("connection", connection => {
