@@ -1,3 +1,7 @@
+- - -
+## [1.1.0-mailbox-subscriptions](https://github.com/argon/push_notify/releases/tag/1.1.0-mailbox-subscriptions)
+Date: 25 September 2016
+
 ### Features
 
 - Mailbox subscriptions
