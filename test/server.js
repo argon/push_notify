@@ -42,6 +42,20 @@ describe("server", function() {
     expect(fakes.controller.notify).to.be.calledWith("test@example.com", "INBOX");
   });
 
+  it("ignores notify messages with `raw mail user`", function() {
+    let message = encodeMsgData({
+      type: 3,
+      pid: 0,
+
+      d1: "raw mail user", // Dummy dovecot username
+      d2: "raw",
+    });
+
+    server.receive(message);
+
+    expect(fakes.controller.notify).to.have.not.been.called;
+  });
+
   it("handles subscription messages", function() {
     let message = encodeMsgData({
       type: 4,
