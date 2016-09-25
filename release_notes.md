@@ -1,5 +1,7 @@
 ### Features
 
+- Mailbox subscriptions
+
 ### Fixes
 
 - - -
