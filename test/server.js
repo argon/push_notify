@@ -41,6 +41,21 @@ describe("server", function() {
     server.receive(message);
     expect(fakes.controller.notify).to.be.calledWith("test@example.com", "INBOX");
   });
+
+  it("handles subscription messages", function() {
+    let message = encodeMsgData({
+      type: 4,
+      pid: 0,
+
+      d1: "test@example.com",      // Username
+      d2: "account-id-1234",       // Account ID
+      d3: "1234567890abcdef",      // Device Token
+      d4: "INBOX",                 // Mailbox
+    });
+
+    server.receive(message);
+    expect(fakes.controller.subscribe).to.be.calledWith("test@example.com", "account-id-1234", "1234567890abcdef", "INBOX");
+  });
 });
 
 function encodeMsgData(data) {

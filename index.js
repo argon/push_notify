@@ -1,12 +1,16 @@
 "use strict";
 
 const apn = require("apn");
+const crypto = require("crypto");
 const redis = require("redis");
 const Promise = require("bluebird");
 
 Promise.promisifyAll(redis.RedisClient.prototype);
 
-const Controller = require("./lib/controller")({Notification: apn.Notification});
+const Controller = require("./lib/controller")({
+  Notification: apn.Notification,
+  md5: (data) => crypto.createHash('md5').update(data).digest("hex"),
+});
 const Server = require("./lib/server");
 const Socket = require("./lib/socket");
 
