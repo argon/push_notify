@@ -1,5 +1,8 @@
 ### Features
 
+- Switched from `redis` to `ioredis`
+- Logging: Set `LOG_LEVEL` - defaults: `warn`
+
 ### Fixes
 
 - - -
