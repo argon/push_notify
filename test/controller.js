@@ -131,18 +131,19 @@ describe("Controller", function() {
       context("other reason", function () {
         beforeEach(function () {
           apnWriteResolve({ status: "503", device: "123456abcdef", response: { reason: "ServiceUnavailable" } });
+          return notify;
         });
 
         it("does not cleanup the token from the user account", function () {
-          return notify.then( () => {
-            expect(fakes.redis.srem).to.not.be.called;
-          });
+          expect(fakes.redis.srem).to.not.be.called;
         });
 
         it("does not delete the device subscriptions set", function (){
-          return notify.then( () => {
-            expect(fakes.redis.del).to.not.be.called;
-          });
+          expect(fakes.redis.del).to.not.be.called;
+        });
+
+        it("logs the device token and reason at warn level", function () {
+          expect(fakes.logger.log).to.be.calledWith("warn", "Controller.notify.send.failure", { username: "test@example.com", device: "123456abcdef", reason: "ServiceUnavailable"});
         });
       });
     });
