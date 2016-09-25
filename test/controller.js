@@ -82,6 +82,18 @@ describe("Controller", function() {
         expect(fakes.logger.log).to.be.calledWithMatch("info", "Controller.notify", { username: "test@example.com", mailbox: "INBOX" });
       });
 
+      it("logs each device:account at debug level", function () {
+        expect(fakes.logger.log).to.be.calledWith("debug", "Controller.notify.device", { username: "test@example.com", device: "123456abcdef:account-id-1234" });
+        expect(fakes.logger.log).to.be.calledWith("debug", "Controller.notify.device", { username: "test@example.com", device: "123456abcdef:account-id-4567" });
+        expect(fakes.logger.log).to.be.calledWith("debug", "Controller.notify.device", { username: "test@example.com", device: "4567890fedcba:account-id-4567" });
+      });
+
+      it("logs shouldSend information for each device at debug level", function () {
+        expect(fakes.logger.log).to.be.calledWith("debug", "Controller.notify.shouldSend", { username: "test@example.com", device: "123456abcdef:account-id-1234", shouldSend: 1});
+        expect(fakes.logger.log).to.be.calledWith("debug", "Controller.notify.shouldSend", { username: "test@example.com", device: "123456abcdef:account-id-4567", shouldSend: 0});
+        expect(fakes.logger.log).to.be.calledWith("debug", "Controller.notify.shouldSend", { username: "test@example.com", device: "4567890fedcba:account-id-4567", shouldSend: 1});
+      });
+
       it("logs sent notifications at info level", function () {
         expect(fakes.logger.log).to.be.calledWith("info", "Controller.notify.send", sinon.match({ username: "test@example.com", device: "123456abcdef", notification: sinon.match.string }));
         expect(fakes.logger.log).to.be.calledWith("info", "Controller.notify.send", sinon.match({ username: "test@example.com", device: "4567890fedcba", notification: sinon.match.string }));
