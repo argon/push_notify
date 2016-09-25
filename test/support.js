@@ -23,15 +23,19 @@ function RedisClient() {
   this.sadd      = sinon.stub();
   this.srem      = sinon.stub();
   this.smembers  = sinon.stub();
+  this.sismember = sinon.stub();
   this.set       = sinon.stub();
   this.get       = sinon.stub();
+  this.del       = sinon.stub();
 }
 
-RedisClient.prototype.sadd     = function () {};
-RedisClient.prototype.srem     = function () {};
-RedisClient.prototype.smembers = function () {};
-RedisClient.prototype.set      = function () {};
-RedisClient.prototype.get      = function () {};
+RedisClient.prototype.sadd      = function () {};
+RedisClient.prototype.srem      = function () {};
+RedisClient.prototype.smembers  = function () {};
+RedisClient.prototype.sismember = function () {};
+RedisClient.prototype.set       = function () {};
+RedisClient.prototype.get       = function () {};
+RedisClient.prototype.del       = function () {};
 
 Promise.promisifyAll(RedisClient.prototype);
 
