@@ -3,6 +3,10 @@
 const apn = require("apn");
 const crypto = require("crypto");
 const redis = require("ioredis");
+const winston = require("winston");
+
+const logger = winston;
+logger.level = process.env["LOG_LEVEL"] || "warn";
 
 const Controller = require("./lib/controller")({
   Notification: apn.Notification,
@@ -22,8 +26,13 @@ Socket("/var/dovecot/push_notify")
       production: true
     });
 
-    const controller = new Controller({ redis: redisClient, apn: apnProvider, prefix: redisPrefix });
-    const server     = new Server({ controller });
+    const controller = new Controller({
+      apn: apnProvider,
+      logger,
+      prefix: redisPrefix,
+      redis: redisClient,
+    });
+    const server     = new Server({ controller, logger });
 
     socket.on("connection", connection => {
       connection.on("data", server.receive.bind(server));

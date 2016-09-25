@@ -29,8 +29,13 @@ function RedisClient() {
   }
 }
 
+function Logger() {
+  this.log = sinon.stub();
+}
+
 global.mock = {
   Controller,
+  Logger,
   RedisClient,
 }
 
