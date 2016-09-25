@@ -1,3 +1,7 @@
+### Features
+
+### Fixes
+
 - - -
 ## [1.2.0-logging](https://github.com/argon/push_notify/releases/tag/1.2.0-logging)
 Date: 25 September 2016
