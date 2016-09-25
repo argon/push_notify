@@ -109,20 +109,22 @@ describe("Controller", function() {
       context("`Unregistered` token", function () {
         beforeEach(function () {
           apnWriteResolve({ status: "410", device: "123456abcdef", response: { reason: "Unregistered", timestamp: 0 } });
+
+          return notify;
         });
         
-        it("cleans up failed device token from user account", function () {
-          return notify.then( () => {
-            expect(fakes.redis.srem).to.be.calledOnce;
-            expect(fakes.redis.srem).to.be.calledWith("test_pn_prefix:test@example.com:device", "123456abcdef:account-id-1234");
-          });
+      it("cleans up failed device token from user account", function () {
+          expect(fakes.redis.srem).to.be.calledOnce;
+          expect(fakes.redis.srem).to.be.calledWith("test_pn_prefix:test@example.com:device", "123456abcdef:account-id-1234");
         });
 
         it("deletes device subscriptions set", function (){
-          return notify.then( () => {
-            expect(fakes.redis.del).to.be.calledOnce;
-            expect(fakes.redis.del).to.be.calledWith("test_pn_prefix:test@example.com:123456abcdef:account-id-1234:subscriptions");
-          });
+          expect(fakes.redis.del).to.be.calledOnce;
+          expect(fakes.redis.del).to.be.calledWith("test_pn_prefix:test@example.com:123456abcdef:account-id-1234:subscriptions");
+        });
+
+        it("logs the device token at warn level", function () {
+          expect(fakes.logger.log).to.be.calledWith("warn", "Controller.notify.send.unregistered", { username: "test@example.com", device: "123456abcdef"});
         });
       });
 
