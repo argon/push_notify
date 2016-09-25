@@ -146,6 +146,25 @@ describe("Controller", function() {
           expect(fakes.logger.log).to.be.calledWith("warn", "Controller.notify.send.failure", { username: "test@example.com", device: "123456abcdef", reason: "ServiceUnavailable"});
         });
       });
+
+      context("send error", function () {
+        beforeEach(function () {
+          apnWriteResolve({ status: "503", device: "123456abcdef", error: new Error("failed") });
+          return notify;
+        });
+
+        it("does not cleanup the token from the user account", function () {
+          expect(fakes.redis.srem).to.not.be.called;
+        });
+
+        it("does not delete the device subscriptions set", function (){
+          expect(fakes.redis.del).to.not.be.called;
+        });
+
+        it("logs the device token and error at error level", function () {
+          expect(fakes.logger.log).to.be.calledWith("error", "Controller.notify.send.error", { username: "test@example.com", device: "123456abcdef", error: sinon.match.any });
+        });
+      });
     });
   });
 
