@@ -2,10 +2,11 @@
 
 const apn = require("apn");
 const crypto = require("crypto");
-const redis = require("redis");
-const Promise = require("bluebird");
+const redis = require("ioredis");
+const winston = require("winston");
 
-Promise.promisifyAll(redis.RedisClient.prototype);
+const logger = winston;
+logger.level = process.env["LOG_LEVEL"] || "warn";
 
 const Controller = require("./lib/controller")({
   Notification: apn.Notification,
@@ -18,15 +19,20 @@ Socket("/var/dovecot/push_notify")
   .then( socket => {
     const redisURL    = process.env["REDIS_URL"];
     const redisPrefix = process.env["REDIS_PREFIX"] || "pn:";
-    const redisClient = redis.createClient({url: redisURL});
+    const redisClient = new redis(redisURL);
     const apnProvider = new apn.Provider({
       cert: process.env["CERT"] || "cert.pem",
       key: process.env["KEY"] || key.pem,
       production: true
     });
 
-    const controller = new Controller({ redis: redisClient, apn: apnProvider, prefix: redisPrefix });
-    const server     = new Server({ controller });
+    const controller = new Controller({
+      apn: apnProvider,
+      logger,
+      prefix: redisPrefix,
+      redis: redisClient,
+    });
+    const server     = new Server({ controller, logger });
 
     socket.on("connection", connection => {
       connection.on("data", server.receive.bind(server));

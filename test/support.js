@@ -1,10 +1,12 @@
 "use strict";
 
+const Promise = require("bluebird");
+
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 const sinon = require("sinon");
 const sinonChai = require("sinon-chai");
-const Promise = require("bluebird");
+const sinonAsPromised = require("sinon-as-promised")(Promise);
 
 chai.use(chaiAsPromised);
 chai.use(sinonChai);
@@ -19,28 +21,21 @@ function Controller() {
   this.subscribe = sinon.stub();
 }
 
+const redisCommands = ["sadd", "srem", "smembers", "sismember", "del"];
+
 function RedisClient() {
-  this.sadd      = sinon.stub();
-  this.srem      = sinon.stub();
-  this.smembers  = sinon.stub();
-  this.sismember = sinon.stub();
-  this.set       = sinon.stub();
-  this.get       = sinon.stub();
-  this.del       = sinon.stub();
+  for (let command of redisCommands[Symbol.iterator]()) {
+    this[command] = sinon.stub();
+  }
 }
 
-RedisClient.prototype.sadd      = function () {};
-RedisClient.prototype.srem      = function () {};
-RedisClient.prototype.smembers  = function () {};
-RedisClient.prototype.sismember = function () {};
-RedisClient.prototype.set       = function () {};
-RedisClient.prototype.get       = function () {};
-RedisClient.prototype.del       = function () {};
-
-Promise.promisifyAll(RedisClient.prototype);
+function Logger() {
+  this.log = sinon.stub();
+}
 
 global.mock = {
   Controller,
+  Logger,
   RedisClient,
 }
 
