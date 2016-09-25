@@ -51,17 +51,17 @@ describe("Controller", function() {
       };
 
       beforeEach(function () {
-        notify = controller.notify("test@example.com", "INBOX");
-        
-        fakes.redis.sismember.withArgs("test_pn_prefix:test@example.com:123456abcdef:account-id-1234:subscriptions", "md5-value").yields(null, 1);
-        fakes.redis.sismember.withArgs("test_pn_prefix:test@example.com:123456abcdef:account-id-4567:subscriptions", "md5-value").yields(null, 0);
-        fakes.redis.sismember.withArgs("test_pn_prefix:test@example.com:4567890fedcba:account-id-4567:subscriptions", "md5-value").yields(null, 1);
+        fakes.redis.sismember.withArgs("test_pn_prefix:test@example.com:123456abcdef:account-id-1234:subscriptions", "md5-value").resolves(1);
+        fakes.redis.sismember.withArgs("test_pn_prefix:test@example.com:123456abcdef:account-id-4567:subscriptions", "md5-value").resolves(0);
+        fakes.redis.sismember.withArgs("test_pn_prefix:test@example.com:4567890fedcba:account-id-4567:subscriptions", "md5-value").resolves(1);
 
-        fakes.redis.smembers.yield(null, [
+        fakes.redis.smembers.resolves([
           "123456abcdef:account-id-1234", 
           "123456abcdef:account-id-4567",
           "4567890fedcba:account-id-4567",
         ]);
+
+        notify = controller.notify("test@example.com", "INBOX");
       });
 
       it("pushes to each registered and subscribed device token", function () {
@@ -84,15 +84,16 @@ describe("Controller", function() {
         fakes.apn.client.write.withArgs(sinon.match.any, "123456abcdef")
           .returns(new Promise( resolve => { apnWriteResolve = resolve; }));
 
-        fakes.redis.srem.yields(null, 1);
-        fakes.redis.del.yields(null, 1);
+        fakes.redis.srem.resolves(1);
+        fakes.redis.del.resolves(1);
 
-        fakes.redis.sismember.withArgs("test_pn_prefix:test@example.com:123456abcdef:account-id-1234:subscriptions", "md5-value").yields(null, 1);
-        fakes.redis.sismember.withArgs("test_pn_prefix:test@example.com:4567890fedcba:account-id-4567:subscriptions", "md5-value").yields(null, 1);
+        fakes.redis.sismember.withArgs("test_pn_prefix:test@example.com:123456abcdef:account-id-1234:subscriptions", "md5-value").resolves(1);
+        fakes.redis.sismember.withArgs("test_pn_prefix:test@example.com:4567890fedcba:account-id-4567:subscriptions", "md5-value").resolves(1);
+        
+        fakes.redis.smembers.resolves(["123456abcdef:account-id-1234", "4567890fedcba:account-id-4567"]);
 
         notify = controller.notify("test@example.com", "INBOX");
         
-        fakes.redis.smembers.yield(null, ["123456abcdef:account-id-1234", "4567890fedcba:account-id-4567"]);
       });
 
       context("`Unregistered` token", function () {

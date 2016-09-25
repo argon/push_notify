@@ -2,10 +2,7 @@
 
 const apn = require("apn");
 const crypto = require("crypto");
-const redis = require("redis");
-const Promise = require("bluebird");
-
-Promise.promisifyAll(redis.RedisClient.prototype);
+const redis = require("ioredis");
 
 const Controller = require("./lib/controller")({
   Notification: apn.Notification,
@@ -18,7 +15,7 @@ Socket("/var/dovecot/push_notify")
   .then( socket => {
     const redisURL    = process.env["REDIS_URL"];
     const redisPrefix = process.env["REDIS_PREFIX"] || "pn:";
-    const redisClient = redis.createClient({url: redisURL});
+    const redisClient = new redis(redisURL);
     const apnProvider = new apn.Provider({
       cert: process.env["CERT"] || "cert.pem",
       key: process.env["KEY"] || key.pem,
