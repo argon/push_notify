@@ -9,6 +9,7 @@ describe("Controller", function() {
   beforeEach(function () {
     fakes = {
       apn:   new apn.Provider(),
+      logger: new mock.Logger(),
       md5: sinon.stub(),
       redis: new mock.RedisClient(),
       prefix: "test_pn_prefix:",
@@ -37,6 +38,10 @@ describe("Controller", function() {
     it("deletes the username:token:accountid subscriptions set in redis", function () {
       expect(fakes.redis.del).to.be.calledWith("test_pn_prefix:test@example.com:1234567890abcdef:1234abcd:subscriptions");
     });
+
+    it("logs the username at info level", function () {
+      expect(fakes.logger.log).to.be.calledWith("info", "Controller.register", { username: "test@example.com" });
+    });
   });
 
   describe("notify", function() {
@@ -61,20 +66,25 @@ describe("Controller", function() {
           "4567890fedcba:account-id-4567",
         ]);
 
-        notify = controller.notify("test@example.com", "INBOX");
+        return controller.notify("test@example.com", "INBOX");
       });
 
       it("pushes to each registered and subscribed device token", function () {
-        return notify.then( () => {
-          expect(fakes.apn.client.write).to.have.been.calledWith(expectedNotification("account-id-1234"), "123456abcdef");
-          expect(fakes.apn.client.write).to.have.been.calledWith(expectedNotification("account-id-4567"), "4567890fedcba");
-        });
+        expect(fakes.apn.client.write).to.have.been.calledWith(expectedNotification("account-id-1234"), "123456abcdef");
+        expect(fakes.apn.client.write).to.have.been.calledWith(expectedNotification("account-id-4567"), "4567890fedcba");
       });
 
       it("does not push to non-subscribed device token", function () {
-        return notify.then( () => {
-          expect(fakes.apn.client.write).to.have.not.been.calledWith(expectedNotification("account-id-4567"), "123456abcdef");
-        });
+        expect(fakes.apn.client.write).to.have.not.been.calledWith(expectedNotification("account-id-4567"), "123456abcdef");
+      });
+
+      it("logs the username at info level", function () {
+        expect(fakes.logger.log).to.be.calledWithMatch("info", "Controller.notify", { username: "test@example.com", mailbox: "INBOX" });
+      });
+
+      it("logs sent notifications at info level", function () {
+        expect(fakes.logger.log).to.be.calledWith("info", "Controller.notify.send", sinon.match({ username: "test@example.com", device: "123456abcdef", notification: sinon.match.string }));
+        expect(fakes.logger.log).to.be.calledWith("info", "Controller.notify.send", sinon.match({ username: "test@example.com", device: "4567890fedcba", notification: sinon.match.string }));
       });
     });
 
@@ -137,11 +147,18 @@ describe("Controller", function() {
   });
 
   describe("subscribe", function () {
-    it("adds the MD5'd mailbox name to the username:token:accountid set", function () {
+    beforeEach(function () {
       fakes.md5.withArgs("INBOX").returns("md5-value");
 
       controller.subscribe("test@example.com", "1234abcd", "1234567890abcdef", "INBOX");
+    });
+    
+    it("adds the MD5'd mailbox name to the username:token:accountid set", function () {
       expect(fakes.redis.sadd).to.be.calledWith("test_pn_prefix:test@example.com:1234567890abcdef:1234abcd:subscriptions", "md5-value");
+    });
+
+    it("logs the username, device and mailbox at info level", function () {
+      expect(fakes.logger.log).to.be.calledWith("info", "Controller.subscribe", { username: "test@example.com", mailbox: "INBOX" });
     });
   });
 });
