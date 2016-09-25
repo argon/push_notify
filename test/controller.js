@@ -1,7 +1,6 @@
 "use strict";
 
 const apn = require("apn/mock");
-const Controller = require("../lib/controller")({Notification: apn.Notification});
 
 describe("Controller", function() {
   let fakes;
@@ -10,19 +9,32 @@ describe("Controller", function() {
   beforeEach(function () {
     fakes = {
       apn:   new apn.Provider(),
+      md5: sinon.stub(),
       redis: new mock.RedisClient(),
       prefix: "test_pn_prefix:",
     }
 
     fakes.apn.client.write = sinon.stub().returns({});
 
+    const Controller = require("../lib/controller")({
+      Notification: apn.Notification,
+      md5: fakes.md5
+     });
+
     controller = new Controller(fakes);
   });
 
   describe("register", function() {
-    it("registers the device token:accountid pair in redis", function() {
+    beforeEach(function () {
       controller.register("test@example.com", "1234abcd", "1234567890abcdef", "io.github.argon.push");
+    });
+
+    it("registers the device token:accountid pair in redis", function() {
       expect(fakes.redis.sadd).to.be.calledWith("test_pn_prefix:test@example.com:device", "1234567890abcdef:1234abcd");
+    });
+
+    it("deletes the username:token:accountid subscriptions set in redis", function () {
+      expect(fakes.redis.del).to.be.calledWith("test_pn_prefix:test@example.com:1234567890abcdef:1234abcd:subscriptions");
     });
   });
 
@@ -54,6 +66,15 @@ describe("Controller", function() {
       return notify.then( () => {
         expect(fakes.redis.srem).to.be.calledWith("test_pn_prefix:test@example.com:device", "123456abcdef:account-id-1234");
       });
+    });
+  });
+
+  describe("subscribe", function () {
+    it("adds the MD5'd mailbox name to the username:token:accountid set", function () {
+      fakes.md5.withArgs("INBOX").returns("md5-value");
+
+      controller.subscribe("test@example.com", "1234abcd", "1234567890abcdef", "INBOX");
+      expect(fakes.redis.sadd).to.be.calledWith("test_pn_prefix:test@example.com:1234567890abcdef:1234abcd:subscriptions", "md5-value");
     });
   });
 });
